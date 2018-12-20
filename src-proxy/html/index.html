@@ -10,11 +10,16 @@
 </head>
 <body>
   <div class="container">
-    <section id="#app" class="app">
+    <section id="app" class="app">
       <div class="query">
-        <span class="query-tip" m-text="query.tip"></span>
+        <span class="query-tip" m-bind:text="query.tip"></span>
         <input class="query-input" m-model="query.query" type="text">
-        <span class="query-text" m-text="query.query"></span>
+        <span class="query-text" m-bind:text="query.query"></span>
+      </div>
+      <div class="actions">
+        <span class="number" m-bind:innerText="number"></span>
+        <button m-on:click="add">add</button>
+        <button m-on:click="sub">sub</button>
       </div>
     </section>
   </div>
