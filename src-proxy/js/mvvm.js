@@ -9,6 +9,7 @@ class M {
     this.$methods = options.methods
     this._observe(this, '$data') // 监听数据
     this._compile(this.$el) // 编译html，监听事件，收集依赖
+    this._initFill(this.$data) // 数据填充
   }
   // 监听数据————对set进行拦截
   _observe(parent, child) {
@@ -39,10 +40,12 @@ class M {
     const nodes = Array.prototype.slice.call(el.children)
     nodes.map(node => {
       if (node.children.length > 0) this._compile(node)
-      let attr = null
+      let attrs = null
       // 解析m-bind
-      if (attr = this._hasBind(node)) {
-        this._pushWatcher(node, attr.attr, attr.key)
+      if (attrs = this._hasBind(node)) {
+        attrs.map(attr => {
+          this._pushWatcher(node, attr.attr, attr.key)
+        })
       }
       // 解析m-model
       if (node.hasAttribute('m-model')) {
@@ -55,11 +58,14 @@ class M {
           node.addEventListener('input', () => {tempData[tempKey] = node.value})
         }
       }
-      let event = null
+      let events = null
       // 解析m-on
-      if (event = this._hasOn(node)) {
-        const handler = this.$methods[event.key]
-        node.addEventListener(event.event, handler)
+      if (events = this._hasOn(node)) {
+        events.map(event => {
+          const handler = this.$methods[event.key].bind(this.$data)
+          console.log(event)
+          node.addEventListener(event.event, handler)
+        })
       }
     })
   }
@@ -68,22 +74,26 @@ class M {
     let i = null
     let attr = null
     let key = null
+    const attrs = []
     // 可以bind的属性
-    const _bindAttr = ['text', 'innerText', 'html', 'innerHTML', 'src', 'value', 'href', 'class', 'style']
+    const _bindAttr = ['text', 'innerText', 'html', 'innerHTML', 'src', 'value', 'href', 'class', 'style', 'alt', 'title']
     _bindAttr.map((item, index) => {
       if (node.hasAttribute('m-bind:' + item)) {
         i = index
         attr = item
         key = node.getAttribute('m-bind:' + item)
+        if (attr && key) {
+          if (attr === 'text') attr = 'innerText'
+          if (attr === 'html') attr = 'innerHTML'
+          attrs.push({ attr, key })
+          attr = null
+          key = null
+        }
       }
     })
-    if (attr === 'text') attr = 'innerText'
-    if (attr === 'html') attr = 'innerHTML'
-    if (attr && key) {
-      return {
-        attr,
-        key
-      }
+    
+    if (attrs.length) {
+      return attrs
     } else return false
   }
   // 添加watcher
@@ -124,20 +134,40 @@ class M {
   _hasOn(node) {
     let event = null
     let key = null
+    const events = []
     // 可以监听的事件
     const _event = ['click', 'dbclick', 'input', 'focus', 'blur', 'change', 'load', 'select']
     _event.map((item, index) => {
       if (node.hasAttribute('m-on:' + item)) {
         event = item
         key = node.getAttribute('m-on:' + item)
+        if (event && key) {
+          events.push({event, key})
+          event = null
+          key = null
+        }
       }
     })
-    if (event && key) {
-      return {
-        event,
-        key
-      }
+    if (events.length) {
+      return events
     } else return false
+  }
+  // 数据填充初始化
+  _initFill(data) {
+    if (data._ob) {
+      const keys = Object.keys(data._ob)
+      keys.map(item => {
+        data._ob[item].map(watcher => {
+          watcher.update()
+        })
+      })
+    }
+    const dataKeys = Object.keys(data)
+    dataKeys.map(item => {
+      if ((typeof data[item]) === 'object' && item !== '_ob') {
+        this._initFill(data[item])
+      }
+    })
   }
 }
 

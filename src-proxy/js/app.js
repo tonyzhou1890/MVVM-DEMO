@@ -5,7 +5,8 @@ window.m = new M({
     query: {
       tip: '输入：',
       query: ''
-    }
+    },
+    style: 'color: #000'
   },
   methods: {
     add() {
@@ -13,6 +14,20 @@ window.m = new M({
     },
     sub() {
       this.number--
+    },
+    changeStyle() {
+      let color = ''
+      let number = Number(this.query.query)
+      if (!number) {
+        color = 'red'
+      } else if(number < 10){
+        color = 'green'
+      } else if (number < 100) {
+        color = 'blue'
+      } else {
+        color = 'gray'
+      }
+      this.style = 'color: ' + color
     }
   }
 })
